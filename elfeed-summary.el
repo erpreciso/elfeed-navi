@@ -5,16 +5,26 @@
                (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
              entries)))
 
+
+(defvar erf-last-update 0
+  "The last time the buffer was redrawn in epoch seconds.")
+
 (defun erf-feeds-occurrences-alist (entries)
-  "Return alist (feed-title counter) for a list of ENTRIES, sorted descending."
+  "Return alist (feed-title counter most-recent) for a list of ENTRIES.
+Sort descending."
   (let ((occurrences))
     (dolist (occurrence-title (erf-get-feeds-titles entries))
       (push 
        (cl-loop for entry in entries
                 for feed-title = (elfeed-meta (elfeed-entry-feed entry) :title)
+                for date = (elfeed-entry-date entry)
                 count (string= feed-title occurrence-title) into p
-                finally return (list occurrence-title p)) occurrences))
+                maximize date into latest-update
+                finally return (list occurrence-title p latest-update))
+       occurrences))
     (seq-sort (lambda (a b) (> (cadr a) (cadr b))) occurrences)))
+
+;; (erf-feeds-occurrences-alist entries)
 
 (defun erf-summary-buffer ()
   (get-buffer-create "*elfeed-erf-summary*"))
@@ -49,13 +59,25 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
 (defun erf-print-line-function (line)
   (let* ((feed (car line))
          (n (cadr line))
+         (last-update (caddr line))
          (feed-column (elfeed-format-column
                        feed erf-feed-title-width :left))
          (n-column (elfeed-format-column (format "%s" n)
-                                         erf-count-width :right)))
+                                         erf-count-width :right))
+         (last-update-column (erf-date last-update 11)))
     (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
-    (insert (propertize n-column 'face 'elfeed-search-date-face) " ")))
+    (insert (propertize n-column 'face 'elfeed-search-tag-face) " ")
+    (insert (propertize last-update-column
+                          'face 'elfeed-search-date-face) " ")))
   
-
-(defvar erf-last-update 0
-  "The last time the buffer was redrawn in epoch seconds.")
+(defun erf-date (epoch-date date-width)
+  (let* ((elfeed-search-date-format (list "%a %b-%d" date-width :left))
+         (date       epoch-date)
+         (date-str   (elfeed-search-format-date date))
+         (delta      (time-subtract (float-time) date))
+         ;; (delta-days (decode-time delta nil 'integer))
+         (delta-days (- (time-to-days (float-time)) (time-to-days date)))
+         (time-str   (cond ((equal delta-days 0) "Today")
+                           ((equal delta-days 1) "Yesterday")
+                           ((format "%2s days ago" delta-days)))))
+    (concat (format "%11s" time-str) ", " date-str)))
