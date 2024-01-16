@@ -48,7 +48,9 @@ Sort descending."
     (dolist (occurrence-title (erf-get-feeds-titles entries))
       (push 
        (cl-loop for entry in entries
-                for feed-title = (elfeed-meta (elfeed-entry-feed entry) :title)
+                for feed = (elfeed-entry-feed entry)
+                for feed-title = (or (elfeed-meta feed :title)
+                                     (elfeed-feed-title feed))
                 for date = (elfeed-entry-date entry)
                 if (string= feed-title occurrence-title)
                   count t into p
