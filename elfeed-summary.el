@@ -8,7 +8,6 @@
 
 (defvar erf-count-width 5 "Width of the count.")
 
-
 (defun erf-print-line-function (line)
   (let* ((feed (car line))
          (n (cadr line))
@@ -63,6 +62,11 @@ Sort descending."
 (defun erf-summary-buffer ()
   (get-buffer-create "*elfeed-erf-summary*"))
 
+(defun erf-summary-update--force ()
+  "Update the erf-summary buffer listing to match the database."
+  (interactive)
+  (erf-summary-update t))
+
 (defun erf-summary-update (&optional force)
   "Update the erf-summary buffer listing to match the database.
 When FORCE is non-nil, redraw even when the database hasn't changed."
@@ -84,8 +88,6 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
         ;; If nothing changed, force a header line update
         (force-mode-line-update))
       )))
-
-(erf-summary-update t)
 
 (defun erf-entries--update-list ()
   "Update `erf-entries' list."
@@ -117,3 +119,39 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
         (setf entries (nreverse entries)))
       (setf erf-entries
             entries))))
+
+(defvar erf-mode-map
+  (let ((map (make-sparse-keymap)))
+    (prog1 map
+      (suppress-keymap map)
+      (define-key map "h" #'describe-mode)
+      (define-key map "q" #'quit-window)
+      (define-key map "e" #'elfeed)
+      (define-key map "n" #'next-line)
+      (define-key map "g" #'erf-summary-update--force)
+      (define-key map "p" #'previous-line))) "Keymap for erf-mode.")
+
+(defun erf-mode ()
+  "Major mode for listing elfeed feed entries occurrences.
+\\{erf-mode-map}"
+  (interactive)
+  (kill-all-local-variables)
+  (use-local-map erf-mode-map)
+  (setq major-mode 'erf-mode
+        mode-name "erf"
+        truncate-lines t
+        buffer-read-only t)
+  (buffer-disable-undo)
+  (hl-line-mode)
+  (run-mode-hooks 'erf-mode-hook))
+
+;;;###autoload
+(defun erf ()
+  "Enter erf."
+  (interactive)
+  (switch-to-buffer (erf-summary-buffer))
+  (unless (eq major-mode 'erf-mode)
+    (erf-mode)))
+
+
+(define-key elfeed-search-mode-map (kbd "a") #'erf)
