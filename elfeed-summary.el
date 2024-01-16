@@ -59,8 +59,6 @@ Sort descending."
        occurrences))
     (seq-sort (lambda (a b) (> (cadr a) (cadr b))) occurrences)))
 
-;; (erf-feeds-occurrences-alist entries)
-
 (defun erf-summary-buffer ()
   (get-buffer-create "*elfeed-erf-summary*"))
 
@@ -131,6 +129,7 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
       (define-key map "e" #'elfeed)
       (define-key map "n" #'next-line)
       (define-key map "g" #'erf-summary-update--force)
+      (define-key map (kbd "RET") #'erf-goto-feed)
       (define-key map "p" #'previous-line))) "Keymap for erf-mode.")
 
 (defun erf-mode ()
@@ -155,5 +154,23 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
   (unless (eq major-mode 'erf-mode)
     (erf-mode)))
 
-
 (define-key elfeed-search-mode-map (kbd "a") #'erf)
+
+(defun erf-selected ()
+  (let* ((line (line-number-at-pos (point)))
+         (selected (nth (- line 1) (erf-feeds-occurrences-alist erf-entries))))
+    (car selected)))
+
+(defun erf-sanitize-regexp-filter (str)
+  "Replace spaces with [[:space:]] in STR.
+
+See `https://github.com/skeeto/elfeed/issues/336'"
+  (string-replace " " "[[:space:]]" str))
+
+(defun erf-goto-feed (feed-title)
+  "Display the elfeed-search buffer filtered by FEED-TITLE at point"
+  (interactive (list (erf-selected)))
+  (let ((feed-title-sanitized (erf-sanitize-regexp-filter feed-title)))
+    (elfeed-search-set-filter
+     (format "@4-days-ago +unread =%s" feed-title-sanitized))
+    (elfeed)))
