@@ -1,0 +1,125 @@
+#+startup: overview
+
+* Explanation
+** Motivation
+
+Following professionally and privately different areas of interest
+(career development, science, technology, macroeconomy), RSS feed list
+grow to hundreds of feeds and several hundreds of daily updates.  This
+package would be part of a workflow to gauge not only which feeds have
+been updated since last visit, but also scan the entire list of feeds,
+even if less frequently updated, and access to a filtered view of the
+main elfeed-search window.
+
+Using scoring results in a clear sorted overall feed list, and it
+could be understandably maintained as first point of entry the feed
+list in the newsreading workflow.  The elfeed-navi is designed as a
+future step in the same workflow.  A rule-of-thumb could be to use
+scoring where the users /know/ what they want to look for, and use
+elfeed-navi when the users /does not yet know/ what they want to look
+for.
+
+The evident alternative is live-filter directly the elfeed-search for
+the feed title, however it assumes the users knows what they are
+looking for.  Another alternative would be using tags and live-filter
+the elfeed-search buffer, but this assume a tag management of a tag
+list that could grow at a similar rate as the feed list.
+
+** Logical frame
+
+*** Environment
+
+`elfeed' creates the buffer `*elfeed-search*' populated with the list
+`elfeed-search-entries'. The list is extracted from the `elfeed-db'
+through a filter `elfeed-search-filter'. Both the filter and the list
+are buffer-local variables.
+
+elfeed-navi does not interfaces with the elfeed-search list but rather
+build a local `elfeed-navi-entries' list using the same, or modified
+when needed, filter used for elfeed-search: this allows for separate
+feeds lists used in the elfeed-search buffer and in the elfeed-navi
+buffer, as example when you apply a live filter in elfeed-search that
+does not need to impact the elfeed-navi.
+
+** Future work
+
+- Add different summary aggregators other than `feed-title', such as
+  `tags' and `today'
+- Add custom aggregator based on custom aggregation rules (e.g. tag
+  AND language
+- Add a static section with entries always on top
+
+** Credits
+
+- [[https://diataxis.fr/][Diátaxis - A systematic approach to technical documentation authoring]]
+  
+* References
+
+** Dependencies
+
+- [[https://github.com/skeeto/elfeed][elfeed]]
+
+** Emacs version
+
+#+begin_src emacs-lisp
+  (emacs-version)
+#+end_src
+
+#+RESULTS:
+: GNU Emacs 28.1 (build 2, x86_64-w64-mingw32)
+:  of 2022-04-21
+
+* TODO Tutorials - learning-oriented experiences
+* How-to guide - goal-oriented directions
+** Test
+
+Copy `elfeed-navi' in PATH and evaluate `(load-path PATH)'.
+
+** Install
+
+Copy `elfeed-navi' in PATH and add `(load-path PATH)' to your emacs
+init file.
+
+** Setup
+
+*** Minimal setup
+
+This code is required to use the navigator and interact appropriately
+with elfeed.
+
+**** Load module
+
+With PATH as the local folder where the module has been copied:
+
+#+begin_src emacs-lisp
+  (load-path PATH)
+#+end_src
+
+**** Update stats in the navi when reading entries in elfeed
+
+#+begin_src emacs-lisp
+  (add-hook 'elfeed-search-update-hook 'elfeed-navi-store-filter)
+#+end_src
+
+*** Suggested setup
+
+While not strictly required for functioning, this code improve the
+experience.
+
+**** Add a point of entry from elfeed-search
+
+#+begin_src emacs-lisp
+ (define-key elfeed-search-mode-map (kbd "a") #'elfeed-navi)
+#+end_src
+
+** Use
+
+- Enter elfeed-navi
+- Generate the feed list using `g'
+- Navigate the list of feed titles using `n' and `p'
+- Hit `RET' to enter elfeed and display the buffer `*elfeed-search*'
+  filtered by the feed title selected
+- When returning to elfeed-navi, regenerate the summary using `G';
+  regenerating using `g' would take the current elfeed-search filter
+  that include the feed-title string, producing not-meaningful
+  results.

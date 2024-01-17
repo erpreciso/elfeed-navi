@@ -1,3 +1,5 @@
+(require 'elfeed)
+
 ;;; source data from elfeed-search
 
 (defvar elfeed-navi-entries ()
@@ -16,8 +18,6 @@ It is a copy of `elfeed-search-entries' refreshed as needed.")
 
 (defun elfeed-navi-store-filter ()
   (setq elfeed-navi-search-filter (substring elfeed-search-filter)))
-
-(add-hook 'elfeed-search-update-hook 'elfeed-navi-store-filter)
 
 (defun elfeed-navi-entries--update-list ()
   "Update `elfeed-navi-entries' list based on current filter."
@@ -206,7 +206,7 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
   (kill-all-local-variables)
   (use-local-map elfeed-navi-mode-map)
   (setq major-mode 'elfeed-navi-mode
-        mode-name "elfeed-navi"\
+        mode-name "elfeed-navi"
         truncate-lines t
         buffer-read-only t)
   (buffer-disable-undo)
@@ -220,8 +220,6 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
   (switch-to-buffer (elfeed-navi-buffer))
   (unless (eq major-mode 'elfeed-navi-mode)
     (elfeed-navi-mode)))
-
-(define-key elfeed-search-mode-map (kbd "a") #'elfeed-navi)
 
 (defun elfeed-navi-selected-summary-entry ()
   (let* ((line (line-number-at-pos (point))))
