@@ -8,7 +8,10 @@ It is a copy of `elfeed-search-entries' refreshed as needed.")
 (defvar elfeed-navi-entries-last-update 0
   "The last time the entries list was updated in epoch seconds.")
 
-(defvar elfeed-navi-search-filter "@4-days-ago +unread"
+(defvar elfeed-navi-search-filter-default "@4-days-ago +unread"
+  "Default filter for the `*elfeed-navi*' buffer.")
+
+(defvar elfeed-navi-search-filter elfeed-navi-search-filter-default
   "Copy of the active filter in the `*elfeed-search*' buffer.")
 
 (defun elfeed-navi-store-filter ()
@@ -177,6 +180,12 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
   (interactive)
   (elfeed-navi-buffer-update t))
 
+(defun elfeed-navi-buffer-update--force-reset ()
+  "Update the `*elfeed-navi*' buffer using default filter."
+  (interactive)
+  (setq elfeed-navi-search-filter elfeed-navi-search-filter-default)
+  (elfeed-navi-buffer-update--force))
+
 (defvar elfeed-navi-mode-map
   (let ((map (make-sparse-keymap)))
     (prog1 map
@@ -186,6 +195,7 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
       (define-key map "e" #'elfeed)
       (define-key map "n" #'next-line)
       (define-key map "g" #'elfeed-navi-buffer-update--force)
+      (define-key map "G" #'elfeed-navi-buffer-update--force-reset)
       (define-key map (kbd "RET") #'elfeed-navi-goto-feed)
       (define-key map "p" #'previous-line))) "Keymap for elfeed-navi-mode.")
 
