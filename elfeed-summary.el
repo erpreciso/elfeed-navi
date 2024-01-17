@@ -8,14 +8,8 @@ It is a copy of `elfeed-search-entries' refreshed as needed.")
 (defvar elfeed-navi-entries-last-update 0
   "The last time the entries list was updated in epoch seconds.")
 
-(defvar elfeed-navi-search-filter ""
+(defvar elfeed-navi-search-filter "@4-days-ago +unread"
   "Copy of the active filter in the `*elfeed-search*' buffer.")
-;; (add-hook 'elfeed-search-update-hook 'elfeed-navi-entries--update-list)
-
-;; (defun elfeed-navi-entries--update-list ()
-;;   "Update `elfeed-navi-entries' list based on current filter."
-;;     (setq elfeed-navi-entries (copy-sequence elfeed-search-entries))
-;;     (setf elfeed-navi-entries-last-update (float-time)))
 
 (defun elfeed-navi-store-filter ()
   (setq elfeed-navi-search-filter (substring elfeed-search-filter)))
@@ -117,9 +111,9 @@ When FORCE not-nil, update list even if the entries-list did not change."
 (defvar elfeed-navi-count-width 5
   "Width of the count column.")
 
-(defun elfeed-navi-summary-buffer ()
+(defun elfeed-navi-buffer ()
   "Get or create the summary buffer."
-  (get-buffer-create "*elfeed-navi-summary*"))
+  (get-buffer-create "*elfeed-navi*"))
 
 (defun elfeed-navi-format-date (epoch-date date-width)
   "Return a meaningful string for date.
@@ -152,8 +146,8 @@ Returning `Today' for today's date, `Yesterday' for yesterday, and
     (insert (propertize most-recent-column
                           'face 'elfeed-search-date-face) " ")))
 
-(defun elfeed-navi-summary-update (&optional force)
-  "Update the erf-summary buffer listing to match the database.
+(defun elfeed-navi-buffer-update (&optional force)
+  "Update the elfeed-navi buffer listing to match the database.
 When FORCE is non-nil, redraw even when the database hasn't changed."
   (interactive)
   ;; update entries, considering filter if any
@@ -161,7 +155,7 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
   ;; update summary entries
   ;; TODO consider other aggregators
   (elfeed-navi-create-summary 'feed-title)
-  (with-current-buffer (elfeed-navi-summary-buffer)
+  (with-current-buffer (elfeed-navi-buffer)
     (when (or force (and (not elfeed-search-filter-active)
                          (< elfeed-navi-buffer-last-update (elfeed-db-last-update))))
       (elfeed-save-excursion
@@ -178,10 +172,10 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
         (force-mode-line-update))
       )))
 
-(defun elfeed-navi-summary-update--force ()
-  "Force update the `*elfeed-navi-summary*' buffer to match the database."
+(defun elfeed-navi-buffer-update--force ()
+  "Force update the `*elfeed-navi*' buffer to match the database."
   (interactive)
-  (elfeed-navi-summary-update t))
+  (elfeed-navi-buffer-update t))
 
 (defvar elfeed-navi-mode-map
   (let ((map (make-sparse-keymap)))
@@ -191,7 +185,7 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
       (define-key map "q" #'quit-window)
       (define-key map "e" #'elfeed)
       (define-key map "n" #'next-line)
-      (define-key map "g" #'elfeed-navi-summary-update--force)
+      (define-key map "g" #'elfeed-navi-buffer-update--force)
       (define-key map (kbd "RET") #'elfeed-navi-goto-feed)
       (define-key map "p" #'previous-line))) "Keymap for elfeed-navi-mode.")
 
@@ -202,7 +196,7 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
   (kill-all-local-variables)
   (use-local-map elfeed-navi-mode-map)
   (setq major-mode 'elfeed-navi-mode
-        mode-name "erf"
+        mode-name "elfeed-navi"\
         truncate-lines t
         buffer-read-only t)
   (buffer-disable-undo)
@@ -213,7 +207,7 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
 (defun elfeed-navi ()
   "Enter elfeed-navi."
   (interactive)
-  (switch-to-buffer (elfeed-navi-summary-buffer))
+  (switch-to-buffer (elfeed-navi-buffer))
   (unless (eq major-mode 'elfeed-navi-mode)
     (elfeed-navi-mode)))
 
