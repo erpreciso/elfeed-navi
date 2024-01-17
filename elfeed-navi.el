@@ -100,9 +100,28 @@ When FORCE not-nil, update list even if the entries-list did not change."
   (setq elfeed-navi-summary-entries-alist-last-update (float-time))))
 
 (defun elfeed-navi-summary-entry-get-title (summary-entry)
-  "Get title from the plist SUMMARY-ENTRY"
+  "Get title from the plist SUMMARY-ENTRY."
   (plist-get summary-entry :title))
-  
+
+(defun elfeed-navi-summary-entry-get-count (summary-entry)
+  "Get count from the plist SUMMARY-ENTRY and return a string."
+  (format "%s" (plist-get summary-entry :count)))
+
+(defun elfeed-navi-summary-entry-get-most-recent (summary-entry)
+  "Return a meaningful string for date.
+
+Returning `Today' for today's date, `Yesterday' for yesterday, and
+`n days ago' for other dates."
+  (let* ((date-epoch (plist-get summary-entry :most-recent))
+         ;; (elfeed-search-date-format (list "%a %b-%d" date-width :left))
+         (date-str   (elfeed-search-format-date date-epoch))
+         (delta      (time-subtract (float-time) date-epoch))
+         (delta-days (- (time-to-days (float-time)) (time-to-days date-epoch)))
+         (time-str   (cond ((equal delta-days 0) "Today")
+                           ((equal delta-days 1) "Yesterday")
+                           ((format "%2s days ago" delta-days)))))
+    (concat (format "%11s" time-str) ", " date-str)))
+
 ;;; rendering results
 
 (defvar elfeed-navi-buffer-last-update 0
@@ -118,36 +137,27 @@ When FORCE not-nil, update list even if the entries-list did not change."
   "Get or create the summary buffer."
   (get-buffer-create "*elfeed-navi*"))
 
-(defun elfeed-navi-format-date (epoch-date date-width)
-  "Return a meaningful string for date.
+(defun elfeed-navi-line-format (aggregator)
+  "Return format string for lines and header, appropriate for AGGREGATOR."
+  (pcase aggregator
+    ('feed-title "%30s %7s %26s")))
 
-Returning `Today' for today's date, `Yesterday' for yesterday, and
-`n days ago' for other dates."
-  (let* ((elfeed-search-date-format (list "%a %b-%d" date-width :left))
-         (date       epoch-date)
-         (date-str   (elfeed-search-format-date date))
-         (delta      (time-subtract (float-time) date))
-         ;; (delta-days (decode-time delta nil 'integer))
-         (delta-days (- (time-to-days (float-time)) (time-to-days date)))
-         (time-str   (cond ((equal delta-days 0) "Today")
-                           ((equal delta-days 1) "Yesterday")
-                           ((format "%2s days ago" delta-days)))))
-    (concat (format "%11s" time-str) ", " date-str)))
-
-(defun elfeed-navi-print-line-function (summary-entry)
-  "Print line in the `*elfeed-navi-buffer*'."
+(defun elfeed-navi-print-line-function (summary-entry aggregator)
+  "Print SUMMARY-ENTRY line in the `*elfeed-navi-buffer*'."
   (let* ((title       (elfeed-navi-summary-entry-get-title summary-entry))
-         (count       (plist-get summary-entry :count))
-         (most-recent (plist-get summary-entry :most-recent))
-         (title-column (elfeed-format-column
-                       title elfeed-navi-title-width :left))
-         (count-column (elfeed-format-column (format "%s" count)
-                                         elfeed-navi-count-width :right))
-         (most-recent-column (elfeed-navi-format-date most-recent 11)))
-    (insert (propertize title-column 'face 'elfeed-search-feed-face) " ")
-    (insert (propertize count-column 'face 'elfeed-search-tag-face) " ")
-    (insert (propertize most-recent-column
-                          'face 'elfeed-search-date-face) " ")))
+         (count   (elfeed-navi-summary-entry-get-count summary-entry))
+         (most-recent  (elfeed-navi-summary-entry-get-most-recent summary-entry)))
+    (insert
+     (format (elfeed-navi-line-format aggregator)
+              (propertize title       'face 'elfeed-search-feed-face)
+              (propertize count       'face 'elfeed-search-tag-face)
+              (propertize most-recent 'face 'elfeed-search-date-face)))))
+
+(defun elfeed-navi-header-line (aggregator)
+  "Set the header line appropriate for AGGREGATOR."
+  (setq header-line-format
+        (format (elfeed-navi-line-format aggregator)
+                "Feed" "Count" "Most recent")))
 
 (defun elfeed-navi-buffer-update (&optional force)
   "Update the elfeed-navi buffer listing to match the database.
@@ -157,7 +167,8 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
   (elfeed-navi-entries--update-list)
   ;; update summary entries
   ;; TODO consider other aggregators
-  (elfeed-navi-create-summary 'feed-title)
+  (let ((aggregator 'feed-title))
+    (elfeed-navi-create-summary aggregator)
   (with-current-buffer (elfeed-navi-buffer)
     (when (or force (and (not elfeed-search-filter-active)
                          (< elfeed-navi-buffer-last-update (elfeed-db-last-update))))
@@ -166,14 +177,15 @@ When FORCE is non-nil, redraw even when the database hasn't changed."
               (standard-output (current-buffer))
               (summary-entries elfeed-navi-summary-entries-alist))
           (erase-buffer)
+          (elfeed-navi-header-line aggregator)
           (dolist (summary-entry summary-entries)
-            (funcall #'elfeed-navi-print-line-function summary-entry)
+            (funcall #'elfeed-navi-print-line-function summary-entry aggregator)
             (insert "\n"))
           (setf elfeed-navi-buffer-last-update (float-time))))
       (when (zerop (buffer-size))
         ;; If nothing changed, force a header line update
         (force-mode-line-update))
-      )))
+      ))))
 
 (defun elfeed-navi-buffer-update--force ()
   "Force update the `*elfeed-navi*' buffer to match the database."
