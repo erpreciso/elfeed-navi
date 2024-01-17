@@ -1,3 +1,30 @@
+;;; elfeed-navi.el --- Navigation for *elfeed-search*  -*- lexical-binding: t; -*-
+
+;; Copyright 2024 Stefano Merlo
+
+;; This program is free software: you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation, either version 3 of the
+;; License, or any later version.
+
+;; This program is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+;; General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see
+;; <https://www.gnu.org/licenses/>.
+
+;; Author: Stefano Merlo <trepreciso@gmail.com>
+;; Created: 2024-01-17
+
+;;; Commentary:
+
+;; A navigation interface for *elfeed-search*.
+
+;;; Code:
+
 (require 'elfeed)
 
 ;;; source data from elfeed-search
@@ -279,3 +306,7 @@ See `https://github.com/skeeto/elfeed/issues/336'"
     (elfeed-search-set-filter
      (format "@4-days-ago +unread =%s" feed-title-sanitized)) ;; TODO review this filter
     (elfeed)))
+
+(provide 'elfeed-navi)
+
+;;; elfeed-navi ends here
